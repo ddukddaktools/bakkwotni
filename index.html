@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word 문서 비교기 — 뚝딱툴즈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --brand: #2754eb;
+    --brand-dark: #1a3fc2;
+    --brand-light: #eef2ff;
+    --brand-glow: #5b7fff;
+    --surface: #ffffff;
+    --bg: #f6f7fb;
+    --text: #1a1d26;
+    --text-sub: #5c6070;
+    --text-muted: #9197a8;
+    --border: #e2e5ee;
+    --border-light: #eef0f5;
+    --red: #e54040;
+    --red-bg: #fef2f2;
+    --green: #16a34a;
+    --amber: #d97706;
+    --radius: 10px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 16px rgba(0,0,0,.07);
+  }
+
+  body {
+    font-family: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ───── Brand Header ───── */
+  .brand-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-light);
+    padding: 0 24px;
+  }
+  .brand-header-inner {
+    max-width: 860px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+  .brand-logo {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; color: var(--text);
+  }
+  .brand-mark {
+    width: 32px; height: 32px; background: var(--brand);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: #fff; font-weight: 700;
+    box-shadow: 0 2px 8px rgba(39,84,235,.25);
+    letter-spacing: -1px;
+  }
+  .brand-name { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .brand-name span { color: var(--brand); }
+  .brand-badge {
+    font-size: 11px; color: var(--text-muted);
+    border: 1px solid var(--border); border-radius: 99px;
+    padding: 2px 10px; font-weight: 500;
+  }
+
+  /* ───── Hero ───── */
+  .hero {
+    background: var(--surface); border-bottom: 1px solid var(--border-light);
+    padding: 48px 24px 44px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 28px; font-weight: 700; letter-spacing: -0.5px;
+    margin-bottom: 10px; line-height: 1.35;
+  }
+  .hero h1 em {
+    font-style: normal; color: var(--brand);
+    background: linear-gradient(135deg, var(--brand), var(--brand-glow));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    font-size: 15px; color: var(--text-sub); max-width: 460px; margin: 0 auto;
+    line-height: 1.65;
+  }
+  .privacy-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 18px; font-size: 12px; color: var(--green);
+    background: #f0fdf4; border: 1px solid #bbf7d0;
+    padding: 5px 14px; border-radius: 99px; font-weight: 600;
+  }
+  .privacy-pill::before { content: "🔒"; font-size: 13px; }
+
+  /* ───── Main Container ───── */
+  .container { max-width: 860px; margin: 0 auto; padding: 24px 24px 80px; }
+
+  /* ───── Drop Zones ───── */
+  .dz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .dz-grid { grid-template-columns: 1fr; } }
+  .drop-zone {
+    border: 2px dashed var(--border); border-radius: var(--radius);
+    background: var(--surface); padding: 30px 18px; text-align: center;
+    cursor: pointer; transition: all .2s;
+    box-shadow: var(--shadow-sm);
+  }
+  .drop-zone:hover { border-color: var(--brand); background: var(--brand-light); }
+  .drop-zone.dragover { border-color: var(--brand); background: var(--brand-light); transform: scale(1.005); }
+  .drop-zone.loaded { border-style: solid; border-color: #bbf7d0; background: #f7fefa; }
+  .drop-zone .icon {
+    width: 46px; height: 46px; margin: 0 auto 10px;
+    background: var(--brand-light); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .drop-zone.loaded .icon { background: #dcfce7; }
+  .drop-zone .dz-label {
+    font-size: 12px; font-weight: 700; color: var(--brand);
+    letter-spacing: 0.3px; margin-bottom: 4px;
+  }
+  .drop-zone p { color: var(--text-sub); font-size: 13px; }
+  .drop-zone strong { color: var(--brand); font-weight: 600; }
+  .dz-file {
+    display: none; margin-top: 10px; font-size: 12.5px; color: var(--text-sub);
+    background: var(--surface); border: 1px solid var(--border-light);
+    border-radius: 8px; padding: 7px 10px; word-break: break-all;
+  }
+  .dz-file.show { display: block; }
+  .dz-hint {
+    text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 10px;
+  }
+  input[type="file"] { display: none; }
+
+  /* ───── Cards ───── */
+  .card {
+    background: var(--surface); border-radius: var(--radius);
+    padding: 22px 24px; margin-top: 16px;
+    box-shadow: var(--shadow-sm); border: 1px solid var(--border-light);
+  }
+  .card h2 {
+    font-size: 15px; font-weight: 700; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .card h2 .icon { font-size: 16px; }
+  .card h2 .sub { font-weight: 400; font-size: 13px; color: var(--text-muted); }
+
+  /* ───── Summary ───── */
+  .doc-info { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .doc-info .doc-pill {
+    font-size: 12.5px; color: var(--text-sub);
+    background: var(--bg); border: 1px solid var(--border-light);
+    border-radius: 8px; padding: 6px 12px;
+  }
+  .doc-info .doc-pill b { color: var(--text); }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stat-box {
+    border: 1px solid var(--border-light); border-radius: 8px;
+    padding: 14px 16px; background: var(--bg);
+  }
+  .stat-box .num { font-size: 24px; font-weight: 700; line-height: 1.2; }
+  .stat-box .lbl { font-size: 12px; font-weight: 600; margin-top: 2px; }
+  .stat-box.ins .num, .stat-box.ins .lbl { color: var(--green); }
+  .stat-box.del .num, .stat-box.del .lbl { color: var(--red); }
+  .stat-box.mod .num, .stat-box.mod .lbl { color: var(--amber); }
+  .stat-box.ins { background: #f0fdf4; border-color: #dcfce7; }
+  .stat-box.del { background: var(--red-bg); border-color: #fee2e2; }
+  .stat-box.mod { background: #fffbeb; border-color: #fef3c7; }
+  .stat-box.img { background: var(--brand-light); border-color: #e0e7ff; }
+  .stat-box.img .num, .stat-box.img .lbl { color: var(--brand); }
+  .same-banner {
+    background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d;
+    border-radius: 8px; padding: 14px 16px; font-size: 14px; font-weight: 600;
+  }
+  .summary-note { font-size: 12px; color: var(--text-muted); margin-top: 12px; line-height: 1.7; }
+
+  /* ───── Toolbar ───── */
+  .toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .seg {
+    display: inline-flex; background: var(--bg); border: 1px solid var(--border-light);
+    border-radius: 8px; padding: 3px; gap: 2px;
+  }
+  .seg button {
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    border: none; background: transparent; color: var(--text-sub);
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all .15s;
+  }
+  .seg button.on { background: var(--surface); color: var(--brand); box-shadow: var(--shadow-sm); }
+  .chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font-family: inherit; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-sub);
+    padding: 5px 12px; border-radius: 99px; cursor: pointer; transition: all .15s;
+  }
+  .chip:hover { border-color: var(--brand); color: var(--brand); }
+  .chip.on { border-color: var(--brand); background: var(--brand-light); color: var(--brand); }
+
+  /* ───── Diff Items ───── */
+  .diff-list { display: flex; flex-direction: column; gap: 10px; }
+  .diff-item {
+    border: 1px solid var(--border-light); border-radius: 8px;
+    padding: 12px 14px; transition: box-shadow .15s;
+  }
+  .diff-item:hover { box-shadow: var(--shadow-sm); }
+  .diff-item.ins { border-left: 3px solid var(--green); }
+  .diff-item.del { border-left: 3px solid var(--red); }
+  .diff-item.mod { border-left: 3px solid var(--amber); }
+  .diff-meta {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .page-chip {
+    font-size: 12px; font-weight: 700; color: var(--brand);
+    background: var(--brand-light); border-radius: 6px; padding: 2px 9px;
+    white-space: nowrap;
+  }
+  .badge {
+    display: inline-block; font-size: 10.5px; font-weight: 700;
+    padding: 2px 8px; border-radius: 4px; letter-spacing: 0.3px;
+  }
+  .badge.b-ins { background: #dcfce7; color: #15803d; }
+  .badge.b-del { background: #fee2e2; color: #b91c1c; }
+  .badge.b-mod { background: #fef3c7; color: #b45309; }
+  .loc-tag { font-size: 11.5px; color: var(--text-muted); }
+
+  .line { display: flex; gap: 10px; align-items: baseline; }
+  .line + .line { margin-top: 6px; }
+  .line-tag {
+    flex: none; font-size: 10.5px; font-weight: 700; width: 22px; height: 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 5px; position: relative; top: 2px;
+  }
+  .line.old .line-tag { background: #fee2e2; color: #b91c1c; }
+  .line.new .line-tag { background: #dcfce7; color: #15803d; }
+  .diff-text { font-size: 14px; line-height: 1.75; word-break: break-word; min-width: 0; }
+  .diff-text del {
+    background: #fee2e2; color: #b91c1c;
+    text-decoration: line-through; text-decoration-thickness: 1px;
+    border-radius: 3px; padding: 0 1px;
+  }
+  .diff-text ins {
+    background: #d1fadf; color: #15803d; text-decoration: none;
+    border-radius: 3px; padding: 0 1px; font-weight: 600;
+  }
+  .diff-text.all-del { color: #b91c1c; background: var(--red-bg); border-radius: 6px; padding: 2px 8px; text-decoration: line-through; text-decoration-thickness: 1px; }
+  .diff-text.all-ins { color: #15803d; background: #f0fdf4; border-radius: 6px; padding: 2px 8px; }
+
+  /* ───── Image Diff ───── */
+  .img-body { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .img-thumbs { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .img-thumb {
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px;
+    background: #fff;
+    background-image: linear-gradient(45deg, #f3f4f6 25%, transparent 25%, transparent 75%, #f3f4f6 75%),
+                      linear-gradient(45deg, #f3f4f6 25%, transparent 25%, transparent 75%, #f3f4f6 75%);
+    background-size: 12px 12px; background-position: 0 0, 6px 6px;
+  }
+  .img-thumb img { display: block; max-width: 140px; max-height: 100px; }
+  .img-thumb.old { border-color: #fca5a5; }
+  .img-thumb.new { border-color: #86efac; }
+  .img-arrow { font-size: 16px; color: var(--text-muted); }
+  .no-preview {
+    display: block; font-size: 11px; color: var(--text-muted);
+    text-align: center; padding: 16px 12px; width: 90px; line-height: 1.5;
+  }
+  .img-detail { font-size: 13.5px; color: var(--text-sub); line-height: 1.9; min-width: 0; }
+  .img-detail b { color: var(--text); font-weight: 600; }
+
+  /* ───── Full Document View ───── */
+  .doc-view { border: 1px solid var(--border-light); border-radius: 8px; padding: 6px 0; }
+  .doc-para {
+    padding: 7px 16px; font-size: 14px; line-height: 1.75; word-break: break-word;
+    display: flex; gap: 10px;
+  }
+  .doc-para .p-page {
+    flex: none; width: 46px; font-size: 11px; color: var(--text-muted);
+    font-weight: 600; text-align: right; padding-top: 3px; white-space: nowrap;
+  }
+  .doc-para .p-body { min-width: 0; flex: 1; }
+  .doc-para.same { color: var(--text-sub); }
+  .doc-para.changed { background: #fffdf5; border-left: 3px solid var(--amber); padding-left: 13px; }
+  .doc-para.changed.k-ins { background: #f7fefa; border-left-color: var(--green); }
+  .doc-para.changed.k-del { background: #fffafa; border-left-color: var(--red); }
+  .collapse-btn {
+    display: block; width: calc(100% - 32px); margin: 4px 16px;
+    font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text-muted);
+    background: var(--bg); border: 1px dashed var(--border); border-radius: 6px;
+    padding: 6px; cursor: pointer; transition: all .15s;
+  }
+  .collapse-btn:hover { color: var(--brand); border-color: var(--brand); background: var(--brand-light); }
+
+  .empty { color: var(--text-muted); font-size: 14px; padding: 16px 0; }
+  .error {
+    background: var(--red-bg); border: 1px solid #fecaca; color: var(--red);
+    border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 14px;
+  }
+  .hidden { display: none; }
+
+  /* ───── Footer ───── */
+  .brand-footer { max-width: 860px; margin: 0 auto; padding: 0 24px 40px; text-align: center; }
+  .footer-divider { width: 40px; height: 3px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+  .footer-text { font-size: 12px; color: var(--text-muted); line-height: 1.8; }
+  .footer-text a { color: var(--brand); text-decoration: none; font-weight: 600; }
+  .footer-text a:hover { text-decoration: underline; }
+  .footer-privacy {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--green); font-weight: 600; margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ───── Brand Header ───── -->
+<header class="brand-header">
+  <div class="brand-header-inner">
+    <a href="#" class="brand-logo">
+      <div class="brand-mark">뚝</div>
+      <div class="brand-name">뚝딱<span>툴즈</span></div>
+    </a>
+    <div class="brand-badge">무료 · 오픈소스</div>
+  </div>
+</header>
+
+<!-- ───── Hero ───── -->
+<section class="hero">
+  <h1>Word 문서, <em>어디가 바뀌었는지</em> 한눈에</h1>
+  <p>누가 내 문서를 고쳤을까? 원본과 수정본을 올리면<br>
+  몇 페이지의 어떤 문구가 달라졌는지 찾아서 하이라이트해 드립니다.</p>
+  <div class="privacy-pill">파일이 서버로 전송되지 않습니다 · 100% 브라우저 처리</div>
+</section>
+
+<!-- ───── Main ───── -->
+<div class="container">
+  <div class="dz-grid">
+    <div class="drop-zone" id="dz-old">
+      <div class="icon">📄</div>
+      <div class="dz-label">원본 (변경 전)</div>
+      <p><strong>클릭</strong>하거나 .docx 파일을 <strong>드래그</strong></p>
+      <div class="dz-file" id="file-old"></div>
+    </div>
+    <div class="drop-zone" id="dz-new">
+      <div class="icon">📝</div>
+      <div class="dz-label">비교본 (변경 후)</div>
+      <p><strong>클릭</strong>하거나 .docx 파일을 <strong>드래그</strong></p>
+      <div class="dz-file" id="file-new"></div>
+    </div>
+  </div>
+  <div class="dz-hint">💡 파일 두 개를 한꺼번에 드래그하면 순서대로 원본 → 비교본에 들어갑니다</div>
+  <input type="file" id="input-old" accept=".docx">
+  <input type="file" id="input-new" accept=".docx">
+
+  <div id="error-box" class="error hidden"></div>
+
+  <div id="results" class="hidden">
+    <div class="card">
+      <h2><span class="icon">📊</span> 비교 결과 <span class="sub" id="summary-sub"></span></h2>
+      <div class="doc-info" id="doc-info"></div>
+      <div id="same-banner" class="same-banner hidden">✅ 두 문서의 본문 텍스트와 그림이 모두 동일합니다.</div>
+      <div class="stat-grid" id="stat-grid">
+        <div class="stat-box ins"><div class="num" id="stat-ins">0</div><div class="lbl">➕ 추가된 문단</div></div>
+        <div class="stat-box del"><div class="num" id="stat-del">0</div><div class="lbl">➖ 삭제된 문단</div></div>
+        <div class="stat-box mod"><div class="num" id="stat-mod">0</div><div class="lbl">✏️ 수정된 문단</div></div>
+        <div class="stat-box img"><div class="num" id="stat-img">0</div><div class="lbl">🖼️ 그림 변경</div></div>
+      </div>
+      <div class="summary-note" id="summary-note"></div>
+    </div>
+
+    <div class="card" id="diff-card">
+      <h2><span class="icon">🔍</span> 달라진 부분 <span class="sub">빨간색 = 지워짐 · 초록색 = 새로 생김</span></h2>
+      <div class="toolbar">
+        <div class="seg">
+          <button id="view-list" class="on">변경 목록</button>
+          <button id="view-doc">전체 문서</button>
+        </div>
+        <div class="chips" id="filter-chips">
+          <button class="chip on" data-f="all">전체</button>
+          <button class="chip" data-f="mod">✏️ 수정</button>
+          <button class="chip" data-f="ins">➕ 추가</button>
+          <button class="chip" data-f="del">➖ 삭제</button>
+        </div>
+      </div>
+      <div class="diff-list" id="diff-list"></div>
+      <div class="doc-view hidden" id="doc-view"></div>
+      <div class="empty hidden" id="diff-empty">해당 유형의 변경이 없습니다.</div>
+    </div>
+
+    <div class="card hidden" id="img-card">
+      <h2><span class="icon">🖼️</span> 그림 변경 <span class="sub">추가 · 삭제 · 교체 · 크기 · 위치</span></h2>
+      <div class="diff-list" id="img-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ───── Footer ───── -->
+<footer class="brand-footer">
+  <div class="footer-divider"></div>
+  <div class="footer-text">
+    <strong>뚝딱툴즈</strong> — 직장인의 문서 작업을 뚝딱 해결<br>
+    <a href="https://github.com/ddukddaktools/bakkwotni" target="_blank" rel="noopener">GitHub</a> · <a href="https://www.threads.net/@ddukddak.tools" target="_blank" rel="noopener">Threads</a><br>
+    <div class="footer-privacy">🔒 모든 도구는 서버 전송 없이 브라우저에서만 동작합니다</div>
+  </div>
+</footer>
+
+<script>
+"use strict";
+
+/* ---------- ZIP 해제 ---------- */
+async function unzip(arrayBuffer) {
+  const view = new DataView(arrayBuffer);
+  const bytes = new Uint8Array(arrayBuffer);
+  let eocd = -1;
+  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 22 - 65535); i--) {
+    if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("ZIP 형식이 아닙니다 (.docx 파일인지 확인하세요)");
+  const count = view.getUint16(eocd + 10, true);
+  let offset = view.getUint32(eocd + 16, true);
+  const files = {};
+  for (let i = 0; i < count; i++) {
+    if (view.getUint32(offset, true) !== 0x02014b50) break;
+    const method = view.getUint16(offset + 10, true);
+    const crc = view.getUint32(offset + 16, true);
+    const compSize = view.getUint32(offset + 20, true);
+    const uncompSize = view.getUint32(offset + 24, true);
+    const nameLen = view.getUint16(offset + 28, true);
+    const extraLen = view.getUint16(offset + 30, true);
+    const commentLen = view.getUint16(offset + 32, true);
+    const localOffset = view.getUint32(offset + 42, true);
+    const name = new TextDecoder().decode(bytes.subarray(offset + 46, offset + 46 + nameLen));
+    files[name] = { name, method, crc, compSize, uncompSize, localOffset };
+    offset += 46 + nameLen + extraLen + commentLen;
+  }
+  function rawData(f) {
+    const lo = f.localOffset;
+    const nLen = view.getUint16(lo + 26, true);
+    const eLen = view.getUint16(lo + 28, true);
+    const dataStart = lo + 30 + nLen + eLen;
+    return bytes.subarray(dataStart, dataStart + f.compSize);
+  }
+  async function read(name) {
+    const f = files[name]; if (!f) return null;
+    const data = rawData(f);
+    if (f.method === 0) return new TextDecoder().decode(data);
+    const ds = new DecompressionStream("deflate-raw");
+    return await new Response(new Blob([data]).stream().pipeThrough(ds)).text();
+  }
+  async function readBytes(name) {
+    const f = files[name]; if (!f) return null;
+    const data = rawData(f);
+    if (f.method === 0) return data.slice();
+    const ds = new DecompressionStream("deflate-raw");
+    const buf = await new Response(new Blob([data]).stream().pipeThrough(ds)).arrayBuffer();
+    return new Uint8Array(buf);
+  }
+  function info(name) { return files[name] || null; }
+  return { names: Object.keys(files), read, readBytes, info };
+}
+
+/* ---------- DOCX 파싱 ---------- */
+const W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+const A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main";
+const ALIGN_KO = { left: "왼쪽", right: "오른쪽", center: "가운데", inside: "안쪽", outside: "바깥쪽", top: "위", bottom: "아래" };
+function parseXml(text) {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  if (doc.getElementsByTagName("parsererror").length) throw new Error("문서 XML을 해석하지 못했습니다");
+  return doc;
+}
+
+async function parseDocx(arrayBuffer) {
+  const zip = await unzip(arrayBuffer);
+  const xmlText = await zip.read("word/document.xml");
+  if (!xmlText) throw new Error("word/document.xml이 없습니다. 올바른 .docx 파일인지 확인하세요. (구형 .doc는 지원하지 않습니다)");
+  const doc = parseXml(xmlText);
+  const body = doc.getElementsByTagNameNS(W_NS, "body")[0];
+  if (!body) throw new Error("문서 본문(body)을 찾을 수 없습니다");
+
+  const relMap = {};
+  const relsText = await zip.read("word/_rels/document.xml.rels");
+  if (relsText) {
+    for (const rel of parseXml(relsText).getElementsByTagName("Relationship"))
+      relMap[rel.getAttribute("Id")] = rel.getAttribute("Target");
+  }
+
+  const paras = [], images = [];
+  let page = 1, hasPageInfo = false;
+  const dchild = (el, ln) => [...el.children].find(c => c.localName === ln);
+
+  function extractImage(drawing, loc) {
+    const container = drawing.children[0];
+    if (!container || (container.localName !== "inline" && container.localName !== "anchor")) return;
+    const blip = container.getElementsByTagNameNS(A_NS, "blip")[0];
+    if (!blip) return; // 차트·도형 등 이미지가 아닌 개체는 제외
+    const rid = blip.getAttributeNS(R_NS, "embed") || blip.getAttributeNS(R_NS, "link") || "";
+    const extent = dchild(container, "extent");
+    const anchored = container.localName === "anchor";
+    let pos = null;
+    if (anchored) {
+      pos = {};
+      for (const [dim, key] of [["positionH", "h"], ["positionV", "v"]]) {
+        const el = dchild(container, dim);
+        if (!el) continue;
+        pos[key + "Rel"] = el.getAttribute("relativeFrom") || "";
+        const off = dchild(el, "posOffset"), align = dchild(el, "align");
+        if (off) pos[key] = parseInt(off.textContent, 10) || 0;
+        else if (align) pos[key] = ALIGN_KO[align.textContent] || align.textContent;
+      }
+    }
+    const docPr = dchild(container, "docPr");
+    images.push({
+      rid, loc, page, paraIdx: paras.length + 1,
+      cx: extent ? parseInt(extent.getAttribute("cx"), 10) || 0 : 0,
+      cy: extent ? parseInt(extent.getAttribute("cy"), 10) || 0 : 0,
+      anchored, pos,
+      name: docPr ? (docPr.getAttribute("name") || "") : "",
+    });
+  }
+
+  function readPara(p, loc) {
+    let text = "", startPage = page;
+    (function scan(node) {
+      for (const child of node.children) {
+        const t = child.localName;
+        if (t === "t") text += child.textContent;
+        else if (t === "tab") text += " ";
+        else if (t === "lastRenderedPageBreak") { page++; hasPageInfo = true; if (!text.trim()) startPage = page; }
+        else if (t === "br") {
+          if (child.getAttributeNS(W_NS, "type") === "page") { page++; hasPageInfo = true; if (!text.trim()) startPage = page; }
+          else text += " ";
+        }
+        else if (t === "pPr" || t === "rPr" || t === "delText" || t === "instrText" || t === "delInstrText") { /* skip */ }
+        else if (t === "AlternateContent") { if (child.children[0]) scan(child.children[0]); }
+        else if (t === "drawing") { extractImage(child, loc); scan(child); } // 그림 수집 후 내부 텍스트 상자도 계속 탐색
+        else scan(child);
+      }
+    })(p);
+    return { text: text.replace(/\s+/g, " ").trim(), startPage };
+  }
+
+  function walk(el, loc) {
+    for (const child of el.children) {
+      const t = child.localName;
+      if (t === "p") {
+        const { text, startPage } = readPara(child, loc);
+        if (text) paras.push({ text, page: startPage, loc, idx: paras.length + 1 });
+      } else if (t === "tbl") {
+        for (const tr of child.children) {
+          if (tr.localName !== "tr") continue;
+          for (const tc of tr.children) {
+            if (tc.localName === "tc") walk(tc, "표");
+          }
+        }
+      }
+    }
+  }
+  walk(body, "본문");
+
+  // 이미지 파일(media) 경로와 내용 체크섬 확정
+  for (const im of images) {
+    const target = relMap[im.rid] || "";
+    let path = null;
+    if (target && !/^[a-z]+:/i.test(target)) {
+      path = target.startsWith("/") ? target.slice(1) : "word/" + target;
+      while (path.includes("../")) path = path.replace(/[^/]+\/\.\.\//, "");
+    }
+    const fi = path ? zip.info(path) : null;
+    im.media = fi ? path : null;
+    im.ext = path ? path.split(".").pop().toLowerCase() : "";
+    im.key = fi ? fi.crc + ":" + fi.uncompSize : "ref:" + target;
+  }
+
+  return { paras, images, pageCount: page, hasPageInfo, zip };
+}
+
+/* ---------- Diff (Myers O(ND)) ---------- */
+function myers(a, b) {
+  const n = a.length, m = b.length;
+  if (!n) return b.map((_, bi) => ({ t: "+", bi }));
+  if (!m) return a.map((_, ai) => ({ t: "-", ai }));
+  const CAP = Math.min(n + m, 2000);
+  const off = CAP + 1;
+  const v = new Int32Array(2 * CAP + 3);
+  const trace = [];
+  for (let d = 0; d <= CAP; d++) {
+    trace.push(v.slice(off - d - 1, off + d + 2));
+    for (let k = -d; k <= d; k += 2) {
+      let x;
+      if (k === -d || (k !== d && v[off + k - 1] < v[off + k + 1])) x = v[off + k + 1];
+      else x = v[off + k - 1] + 1;
+      let y = x - k;
+      while (x < n && y < m && a[x] === b[y]) { x++; y++; }
+      v[off + k] = x;
+      if (x >= n && y >= m) return backtrack(trace, d, n, m);
+    }
+  }
+  // 너무 많이 달라 경로 탐색 한도 초과 → 전부 교체로 처리
+  const ops = a.map((_, ai) => ({ t: "-", ai }));
+  b.forEach((_, bi) => ops.push({ t: "+", bi }));
+  return ops;
+}
+function backtrack(trace, d, n, m) {
+  const ops = [];
+  let x = n, y = m;
+  for (; d > 0; d--) {
+    const v = trace[d];
+    const idx = k => k + d + 1;
+    const k = x - y;
+    let prevK;
+    if (k === -d || (k !== d && v[idx(k - 1)] < v[idx(k + 1)])) prevK = k + 1;
+    else prevK = k - 1;
+    const prevX = v[idx(prevK)];
+    const prevY = prevX - prevK;
+    while (x > prevX && y > prevY) { x--; y--; ops.push({ t: "=", ai: x, bi: y }); }
+    if (prevK === k + 1) { y--; ops.push({ t: "+", bi: y }); }
+    else { x--; ops.push({ t: "-", ai: x }); }
+  }
+  while (x > 0 && y > 0) { x--; y--; ops.push({ t: "=", ai: x, bi: y }); }
+  ops.reverse();
+  return ops;
+}
+function diffSeq(a, b) {
+  let s = 0;
+  while (s < a.length && s < b.length && a[s] === b[s]) s++;
+  let ea = a.length, eb = b.length;
+  while (ea > s && eb > s && a[ea - 1] === b[eb - 1]) { ea--; eb--; }
+  const ops = [];
+  for (let i = 0; i < s; i++) ops.push({ t: "=", ai: i, bi: i });
+  for (const op of myers(a.slice(s, ea), b.slice(s, eb))) {
+    if (op.t === "=") ops.push({ t: "=", ai: op.ai + s, bi: op.bi + s });
+    else if (op.t === "-") ops.push({ t: "-", ai: op.ai + s });
+    else ops.push({ t: "+", bi: op.bi + s });
+  }
+  for (let i = 0; i < a.length - ea; i++) ops.push({ t: "=", ai: ea + i, bi: eb + i });
+  return ops;
+}
+
+/* ---------- 문단 내부(토큰) diff : 한글은 글자, 영문/숫자는 단어 단위 ---------- */
+function tokenize(s) {
+  return s.match(/\s+|[A-Za-z0-9_]+|[가-힣]|./g) || [];
+}
+function inlineDiff(aText, bText) {
+  const aT = tokenize(aText), bT = tokenize(bText);
+  const ops = diffSeq(aT, bT);
+  const oldSegs = [], newSegs = [], merged = [];
+  let sameChars = 0;
+  const push = (arr, type, text) => {
+    if (!text) return;
+    const last = arr[arr.length - 1];
+    if (last && last.type === type) last.text += text;
+    else arr.push({ type, text });
+  };
+  for (const op of ops) {
+    if (op.t === "=") {
+      const tx = aT[op.ai]; sameChars += tx.length;
+      push(oldSegs, "=", tx); push(newSegs, "=", tx); push(merged, "=", tx);
+    } else if (op.t === "-") {
+      const tx = aT[op.ai]; push(oldSegs, "-", tx); push(merged, "-", tx);
+    } else {
+      const tx = bT[op.bi]; push(newSegs, "+", tx); push(merged, "+", tx);
+    }
+  }
+  const sim = (sameChars * 2) / ((aText.length + bText.length) || 1);
+  return { oldSegs, newSegs, merged, sim };
+}
+
+/* ---------- 문서 비교 : 변경 항목 만들기 ---------- */
+function buildItems(parasA, parasB) {
+  const ops = diffSeq(parasA.map(p => p.text), parasB.map(p => p.text));
+  const items = [];
+  let i = 0;
+  while (i < ops.length) {
+    if (ops[i].t === "=") { items.push({ kind: "same", a: parasA[ops[i].ai], b: parasB[ops[i].bi] }); i++; continue; }
+    const dels = [], inss = [];
+    while (i < ops.length && ops[i].t !== "=") {
+      if (ops[i].t === "-") dels.push(parasA[ops[i].ai]);
+      else inss.push(parasB[ops[i].bi]);
+      i++;
+    }
+    const pairs = Math.min(dels.length, inss.length);
+    for (let k = 0; k < pairs; k++) {
+      const d = inlineDiff(dels[k].text, inss[k].text);
+      if (d.sim >= 0.35) items.push({ kind: "mod", a: dels[k], b: inss[k], d });
+      else { items.push({ kind: "del", a: dels[k] }); items.push({ kind: "ins", b: inss[k] }); }
+    }
+    for (let k = pairs; k < dels.length; k++) items.push({ kind: "del", a: dels[k] });
+    for (let k = pairs; k < inss.length; k++) items.push({ kind: "ins", b: inss[k] });
+  }
+  return items;
+}
+
+/* ---------- 그림 비교 ---------- */
+const EMU_CM = 360000;
+const cmv = emu => Math.round(emu / EMU_CM * 10) / 10;
+
+function buildImageItems(A, B) {
+  const ops = diffSeq(A.images.map(im => im.key), B.images.map(im => im.key));
+  const items = [];
+
+  function sizeChanged(a, b) { return cmv(a.cx) !== cmv(b.cx) || cmv(a.cy) !== cmv(b.cy); }
+  function posChanged(a, b) {
+    if (a.anchored !== b.anchored) return true;
+    if (a.anchored) return JSON.stringify(a.pos) !== JSON.stringify(b.pos);
+    // 인라인 그림은 페이지 정보가 있을 때만 이동으로 판단 (문단 번호는 텍스트 편집만으로도 밀리므로)
+    if (A.hasPageInfo && B.hasPageInfo) return a.page !== b.page;
+    return false;
+  }
+  function pairItem(a, b, replaced) {
+    const changes = [];
+    if (replaced) changes.push("replace");
+    if (sizeChanged(a, b)) changes.push("size");
+    if (posChanged(a, b)) changes.push("move");
+    if (changes.length) items.push({ kind: "img-mod", a, b, changes });
+  }
+
+  let i = 0;
+  while (i < ops.length) {
+    if (ops[i].t === "=") { pairItem(A.images[ops[i].ai], B.images[ops[i].bi], false); i++; continue; }
+    const dels = [], inss = [];
+    while (i < ops.length && ops[i].t !== "=") {
+      if (ops[i].t === "-") dels.push(A.images[ops[i].ai]);
+      else inss.push(B.images[ops[i].bi]);
+      i++;
+    }
+    const pairs = Math.min(dels.length, inss.length);
+    for (let k = 0; k < pairs; k++) pairItem(dels[k], inss[k], true);
+    for (let k = pairs; k < dels.length; k++) items.push({ kind: "img-del", a: dels[k] });
+    for (let k = pairs; k < inss.length; k++) items.push({ kind: "img-ins", b: inss[k] });
+  }
+  return items;
+}
+
+/* ---------- UI ---------- */
+const $ = id => document.getElementById(id);
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function segsHtml(segs) {
+  return segs.map(s => {
+    const t = escapeHtml(s.text);
+    if (s.type === "-") return `<del>${t}</del>`;
+    if (s.type === "+") return `<ins>${t}</ins>`;
+    return t;
+  }).join("");
+}
+
+const state = {
+  old: null,  // { name, parsed }
+  new: null,
+  items: null,
+  filter: "all",
+  view: "list",
+};
+
+function setupZone(zoneId, fileId, inputId, slot) {
+  const zone = $(zoneId), input = $(inputId);
+  zone.addEventListener("click", () => input.click());
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("dragover"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+  zone.addEventListener("drop", e => {
+    e.preventDefault(); zone.classList.remove("dragover");
+    const files = [...e.dataTransfer.files];
+    if (files.length >= 2) { handleFile(files[0], "old"); handleFile(files[1], "new"); }
+    else if (files[0]) handleFile(files[0], slot);
+  });
+  input.addEventListener("change", () => { if (input.files[0]) handleFile(input.files[0], slot); input.value = ""; });
+}
+setupZone("dz-old", "file-old", "input-old", "old");
+setupZone("dz-new", "file-new", "input-new", "new");
+
+async function handleFile(file, slot) {
+  hideError();
+  if (!/\.docx$/i.test(file.name)) return showError("'.docx' 파일만 지원합니다. (구형 .doc는 열 수 없습니다)");
+  const zone = $(slot === "old" ? "dz-old" : "dz-new");
+  const label = $(slot === "old" ? "file-old" : "file-new");
+  try {
+    const buf = await file.arrayBuffer();
+    const parsed = await parseDocx(buf);
+    state[slot] = { name: file.name, parsed };
+    zone.classList.add("loaded");
+    const pageTxt = parsed.hasPageInfo ? ` · 약 ${parsed.pageCount}쪽` : "";
+    label.innerHTML = `✅ ${escapeHtml(file.name)}<br><span style="color:var(--text-muted)">문단 ${parsed.paras.length}개${pageTxt}</span>`;
+    label.classList.add("show");
+    if (state.old && state.new) compare();
+  } catch (err) {
+    state[slot] = null;
+    zone.classList.remove("loaded");
+    label.classList.remove("show");
+    showError(`"${file.name}" 파일을 읽지 못했습니다: ${err.message}`);
+  }
+}
+
+function showError(msg) { const box = $("error-box"); box.textContent = "⚠️ " + msg; box.classList.remove("hidden"); }
+function hideError() { $("error-box").classList.add("hidden"); }
+
+function pageLabel(para, parsed) {
+  if (!para) return "";
+  return parsed.hasPageInfo ? `${para.page}쪽` : `${para.idx}번째 문단`;
+}
+
+function compare() {
+  const A = state.old.parsed, B = state.new.parsed;
+  for (const url of thumbCache.values()) URL.revokeObjectURL(url);
+  thumbCache.clear();
+  state.items = buildItems(A.paras, B.paras);
+  state.imgItems = buildImageItems(A, B);
+  const counts = { ins: 0, del: 0, mod: 0 };
+  for (const it of state.items) if (counts[it.kind] !== undefined) counts[it.kind]++;
+  const textTotal = counts.ins + counts.del + counts.mod;
+  const imgTotal = state.imgItems.length;
+
+  $("stat-ins").textContent = counts.ins;
+  $("stat-del").textContent = counts.del;
+  $("stat-mod").textContent = counts.mod;
+  $("stat-img").textContent = imgTotal;
+  $("summary-sub").textContent = `${state.old.name}  vs  ${state.new.name}`;
+
+  const docPill = (icon, label, p) => {
+    const bits = [];
+    if (p.hasPageInfo) bits.push(`약 ${p.pageCount}쪽`);
+    bits.push(`문단 ${p.paras.length}개`);
+    bits.push(`그림 ${p.images.length}개`);
+    return `<span class="doc-pill">${icon} <b>${label}</b> — ${bits.join(" · ")}</span>`;
+  };
+  $("doc-info").innerHTML = docPill("📄", "원본", A) + docPill("📝", "수정본", B);
+
+  $("same-banner").classList.toggle("hidden", textTotal + imgTotal !== 0);
+  $("stat-grid").classList.toggle("hidden", textTotal + imgTotal === 0);
+  $("diff-card").classList.toggle("hidden", textTotal === 0);
+  $("img-card").classList.toggle("hidden", imgTotal === 0);
+
+  const notes = [];
+  if (A.hasPageInfo || B.hasPageInfo) notes.push("페이지 번호는 Word가 마지막으로 저장할 때 기록한 페이지 나눔 기준의 추정치입니다 (수정본 기준, 삭제된 문단은 원본 기준).");
+  else notes.push("이 문서에는 페이지 정보가 없어 문단 번호로 위치를 표시합니다. Word에서 한 번 저장하면 페이지 번호가 표시됩니다.");
+  notes.push("본문·표 안의 텍스트를 비교하며, 머리글/바닥글·메모·서식(글꼴, 색상 등) 변경은 비교 대상이 아닙니다.");
+  if (A.images.length || B.images.length) notes.push("그림은 파일 내용(체크섬)·크기·위치를 비교합니다. 픽셀 단위 유사도는 판단하지 않아, 조금이라도 다른 이미지는 '교체'로 표시됩니다.");
+  $("summary-note").innerHTML = notes.map(n => "· " + escapeHtml(n)).join("<br>");
+
+  renderDiff();
+  renderImages().catch(err => showError("그림 미리보기를 만들지 못했습니다: " + err.message));
+  $("results").classList.remove("hidden");
+  $("results").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+/* ----- 그림 변경 뷰 ----- */
+const MIME = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", bmp: "image/bmp", webp: "image/webp", svg: "image/svg+xml" };
+const thumbCache = new Map();
+
+function imgPageLabel(im, parsed) {
+  return parsed.hasPageInfo ? `${im.page}쪽` : `${im.paraIdx}번째 문단 부근`;
+}
+function fmtSize(im) { return `${cmv(im.cx)} × ${cmv(im.cy)}cm`; }
+function fmtPos(im, parsed) {
+  const base = imgPageLabel(im, parsed);
+  if (im.anchored && im.pos) {
+    const p = [];
+    if (typeof im.pos.h === "number") p.push("가로 " + cmv(im.pos.h) + "cm");
+    else if (im.pos.h) p.push("가로 " + im.pos.h);
+    if (typeof im.pos.v === "number") p.push("세로 " + cmv(im.pos.v) + "cm");
+    else if (im.pos.v) p.push("세로 " + im.pos.v);
+    if (p.length) return `${base} (${p.join(", ")})`;
+  }
+  return base;
+}
+
+async function thumbEl(im, parsed, side) {
+  const wrap = document.createElement("span");
+  wrap.className = "img-thumb " + side;
+  const mime = MIME[im.ext];
+  if (im.media && mime) {
+    const cacheKey = side + ":" + im.media;
+    let url = thumbCache.get(cacheKey);
+    if (!url) {
+      const bytes = await parsed.zip.readBytes(im.media);
+      url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+      thumbCache.set(cacheKey, url);
+    }
+    wrap.innerHTML = `<img src="${url}" alt="">`;
+  } else {
+    wrap.innerHTML = `<span class="no-preview">🖼️<br>미리보기 불가</span>`;
+  }
+  return wrap;
+}
+
+async function renderImages() {
+  const list = $("img-list");
+  list.innerHTML = "";
+  const A = state.old.parsed, B = state.new.parsed;
+  for (const it of state.imgItems) {
+    const div = document.createElement("div");
+    div.className = "diff-item " + (it.kind === "img-ins" ? "ins" : it.kind === "img-del" ? "del" : "mod");
+    let badges = "";
+    if (it.kind === "img-ins") badges = '<span class="badge b-ins">➕ 그림 추가</span>';
+    else if (it.kind === "img-del") badges = '<span class="badge b-del">➖ 그림 삭제</span>';
+    else {
+      if (it.changes.includes("replace")) badges += '<span class="badge b-mod">🔄 교체</span>';
+      if (it.changes.includes("size")) badges += '<span class="badge b-mod">📐 크기</span>';
+      if (it.changes.includes("move")) badges += '<span class="badge b-mod">📍 위치</span>';
+    }
+    const ref = it.b || it.a;
+    const refParsed = it.b ? B : A;
+    const nameTxt = ref.name ? `<span class="loc-tag">${escapeHtml(ref.name)}</span>` : "";
+    const locTxt = ref.loc === "표" ? '<span class="loc-tag">📋 표 안</span>' : "";
+
+    const det = [];
+    if (it.kind === "img-mod") {
+      if (it.changes.includes("replace")) det.push("다른 이미지로 <b>교체</b>되었습니다");
+      if (it.changes.includes("size")) det.push(`크기 ${fmtSize(it.a)} → <b>${fmtSize(it.b)}</b>`);
+      if (it.changes.includes("move")) det.push(`위치 ${escapeHtml(fmtPos(it.a, A))} → <b>${escapeHtml(fmtPos(it.b, B))}</b>`);
+    } else {
+      det.push(`크기 ${fmtSize(ref)}`);
+    }
+
+    div.innerHTML =
+      `<div class="diff-meta"><span class="page-chip">${imgPageLabel(ref, refParsed)}</span>${badges}${nameTxt}${locTxt}</div>` +
+      `<div class="img-body"><span class="img-thumbs"></span><span class="img-detail">${det.join("<br>")}</span></div>`;
+    list.appendChild(div);
+
+    const thumbs = div.querySelector(".img-thumbs");
+    const showBoth = it.kind === "img-mod" && it.changes.includes("replace");
+    if (it.a) thumbs.appendChild(await thumbEl(it.a, A, (showBoth || it.kind === "img-del") ? "old" : ""));
+    if (showBoth) {
+      const arrow = document.createElement("span");
+      arrow.className = "img-arrow"; arrow.textContent = "→";
+      thumbs.appendChild(arrow);
+    }
+    if (it.b && (!it.a || showBoth)) thumbs.appendChild(await thumbEl(it.b, B, "new"));
+  }
+}
+/* ----- 변경 목록 뷰 ----- */
+function renderList() {
+  const list = $("diff-list"); list.innerHTML = "";
+  const A = state.old.parsed, B = state.new.parsed;
+  const changed = state.items.filter(it => it.kind !== "same" && (state.filter === "all" || it.kind === state.filter));
+  $("diff-empty").classList.toggle("hidden", changed.length > 0);
+  const frag = document.createDocumentFragment();
+  for (const it of changed) {
+    const div = document.createElement("div");
+    div.className = "diff-item " + it.kind;
+    const loc = (it.b || it.a).loc;
+    const locHtml = loc === "표" ? `<span class="loc-tag">📋 표 안</span>` : "";
+    if (it.kind === "mod") {
+      div.innerHTML =
+        `<div class="diff-meta"><span class="page-chip">${pageLabel(it.b, B)}</span><span class="badge b-mod">✏️ 수정</span>${locHtml}</div>` +
+        `<div class="line old"><span class="line-tag">전</span><span class="diff-text">${segsHtml(it.d.oldSegs)}</span></div>` +
+        `<div class="line new"><span class="line-tag">후</span><span class="diff-text">${segsHtml(it.d.newSegs)}</span></div>`;
+    } else if (it.kind === "ins") {
+      div.innerHTML =
+        `<div class="diff-meta"><span class="page-chip">${pageLabel(it.b, B)}</span><span class="badge b-ins">➕ 추가</span>${locHtml}</div>` +
+        `<div class="line new"><span class="line-tag">후</span><span class="diff-text all-ins">${escapeHtml(it.b.text)}</span></div>`;
+    } else {
+      div.innerHTML =
+        `<div class="diff-meta"><span class="page-chip">${pageLabel(it.a, A)}</span><span class="badge b-del">➖ 삭제</span>${locHtml}</div>` +
+        `<div class="line old"><span class="line-tag">전</span><span class="diff-text all-del">${escapeHtml(it.a.text)}</span></div>`;
+    }
+    frag.appendChild(div);
+  }
+  list.appendChild(frag);
+}
+
+/* ----- 전체 문서 뷰 ----- */
+function renderDoc() {
+  const view = $("doc-view"); view.innerHTML = "";
+  const A = state.old.parsed, B = state.new.parsed;
+  const frag = document.createDocumentFragment();
+
+  function paraEl(cls, pageTxt, bodyHtml) {
+    const div = document.createElement("div");
+    div.className = "doc-para " + cls;
+    div.innerHTML = `<span class="p-page">${pageTxt}</span><span class="p-body diff-text">${bodyHtml}</span>`;
+    return div;
+  }
+  function sameEl(it) { return paraEl("same", pageLabel(it.b, B), escapeHtml(it.b.text)); }
+
+  let i = 0;
+  const items = state.items;
+  while (i < items.length) {
+    if (items[i].kind === "same") {
+      let j = i;
+      while (j < items.length && items[j].kind === "same") j++;
+      const run = items.slice(i, j);
+      if (run.length > 4) {
+        frag.appendChild(sameEl(run[0]));
+        const hiddenRun = run.slice(1, run.length - 1);
+        const btn = document.createElement("button");
+        btn.className = "collapse-btn";
+        btn.textContent = `⋯ 동일한 문단 ${hiddenRun.length}개 접힘 — 펼치기 ⋯`;
+        btn.addEventListener("click", () => {
+          const f = document.createDocumentFragment();
+          for (const it of hiddenRun) f.appendChild(sameEl(it));
+          btn.replaceWith(f);
+        });
+        frag.appendChild(btn);
+        frag.appendChild(sameEl(run[run.length - 1]));
+      } else {
+        for (const it of run) frag.appendChild(sameEl(it));
+      }
+      i = j;
+    } else {
+      const it = items[i];
+      if (it.kind === "mod") frag.appendChild(paraEl("changed", pageLabel(it.b, B), segsHtml(it.d.merged)));
+      else if (it.kind === "ins") frag.appendChild(paraEl("changed k-ins", pageLabel(it.b, B), `<ins>${escapeHtml(it.b.text)}</ins>`));
+      else frag.appendChild(paraEl("changed k-del", pageLabel(it.a, A), `<del>${escapeHtml(it.a.text)}</del>`));
+      i++;
+    }
+  }
+  view.appendChild(frag);
+}
+
+function renderDiff() {
+  const isList = state.view === "list";
+  $("view-list").classList.toggle("on", isList);
+  $("view-doc").classList.toggle("on", !isList);
+  $("diff-list").classList.toggle("hidden", !isList);
+  $("doc-view").classList.toggle("hidden", isList);
+  $("filter-chips").style.visibility = isList ? "visible" : "hidden";
+  if (isList) renderList();
+  else { $("diff-empty").classList.add("hidden"); renderDoc(); }
+}
+
+$("view-list").addEventListener("click", () => { state.view = "list"; renderDiff(); });
+$("view-doc").addEventListener("click", () => { state.view = "doc"; renderDiff(); });
+$("filter-chips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip"); if (!chip) return;
+  state.filter = chip.dataset.f;
+  document.querySelectorAll("#filter-chips .chip").forEach(c => c.classList.toggle("on", c === chip));
+  renderList();
+});
+</script>
+</body>
+</html>
